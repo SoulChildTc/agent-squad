@@ -1,69 +1,26 @@
 import { readFile, writeFile, mkdir, readdir, access } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import search from '@inquirer/search';
-import confirm from '@inquirer/confirm';
-import input from '@inquirer/input';
+import {
+  AGENTS_DIR, LARK_DIR, SKILLS_DIR, MODEL_PLACEHOLDER, DEFAULT_MODEL, ROLE_NAMES,
+  LARK_SKILLS, LARK_SKILLS_SOURCE,
+  getTargetDir, getTemplateFiles, askConfirm, section, done, warn, error, meta,
+  copyDir, fetchModels, pickModel, parseArgs, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
+} from '../utils.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = join(__dirname, '..', '..', 'templates');
-const AGENTS_DIR = join(TEMPLATES_DIR, 'agents');
-const LARK_DIR = join(TEMPLATES_DIR, 'lark');
-const SKILLS_DIR = join(TEMPLATES_DIR, 'skills');
-const MODEL_PLACEHOLDER = '{{model}}';
-
-const DEFAULT_MODEL = 'opencode/deepseek-v4-flash-free';
-
-const LARK_SKILLS = ['lark-doc', 'lark-drive', 'lark-shared'];
-const LARK_SKILLS_SOURCE = 'larksuite/cli';
-
-const ROLE_NAMES = {
-  'ceo': 'ceo（总协调）',
-  'product-manager': 'product-manager（产品经理）',
-  'fullstack-developer': 'fullstack-developer（全栈工程师）',
-  'ui-ux-designer': 'ui-ux-designer（UI/UX 设计师）',
-  'marketing-growth': 'marketing-growth（营销增长）',
-  'customer-service': 'customer-service（客户服务）',
-  'security-engineer': 'security-engineer（安全工程师）',
-  'advisor': 'advisor（顾问）',
-};
-
-const BOLD = '\x1b[1m';
-const CYAN = '\x1b[36m';
-const GREEN = '\x1b[32m';
-const YELLOW = '\x1b[33m';
-const RED = '\x1b[31m';
-const GRAY = '\x1b[90m';
-const RESET = '\x1b[0m';
-
-async function askConfirm(msg) {
-  return confirm({ message: msg, theme: { prefix: '  ' } });
-}
-
-function section(title) {
-  console.log(`\n${CYAN}┌─ ${BOLD}${title}${RESET}${CYAN} ${'─'.repeat(50 - title.length)}${RESET}`);
-}
-
-function done(msg) {
-  console.log(`  ${GREEN}✔${RESET} ${msg}`);
-}
-
-function warn(msg) {
-  console.log(`  ${YELLOW}⚠${RESET} ${msg}`);
-}
-
-function meta(msg) {
-  console.log(`  ${GRAY}${msg}${RESET}`);
-}
-
-function getTargetDir() {
-  return join(process.cwd(), '.opencode', 'agents');
-}
-
-async function getTemplateFiles() {
-  const files = await readdir(AGENTS_DIR);
-  return files.filter(f => f.endsWith('.md'));
+async function generateFiles(targetDir, modelMap) {
+  section('生成文件');
+  const agentFiles = await getTemplateFiles();
+  await mkdir(targetDir, { recursive: true });
+  for (const file of agentFiles) {
+    let content = await readFile(join(AGENTS_DIR, file), 'utf-8');
+    const roleName = file.replace('.md', '');
+    const model = modelMap[roleName] || modelMap['_default'];
+    content = content.replaceAll(MODEL_PLACEHOLDER, model);
+    await writeFile(join(targetDir, file), content);
+  }
+  done(`${agentFiles.length} 个 Agent 已生成`);
+  agentFiles.forEach(f => meta(`  ${ROLE_NAMES[f.replace('.md', '')] || f.replace('.md', '')}`));
 }
 
 async function installLarkSkills() {
@@ -130,36 +87,6 @@ async function copySkills(targetDir) {
   }
 }
 
-async function copyDir(src, dest) {
-  await mkdir(dest, { recursive: true });
-  const entries = await readdir(src, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const srcPath = join(src, entry.name);
-    const destPath = join(dest, entry.name);
-    
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath);
-    } else {
-      const content = await readFile(srcPath);
-      await writeFile(destPath, content);
-    }
-  }
-}
-
-function parseArgs(args) {
-  const opts = {};
-  for (let i = 0; i < args.length; i++) {
-    switch (args[i]) {
-      case '--model': opts.model = args[++i]; break;
-      case '--lark': opts.lark = true; break;
-      case '--no-lark': opts.lark = false; break;
-      case '--yes': opts.yes = true; break;
-    }
-  }
-  return opts;
-}
-
 export async function init(args) {
   const opts = parseArgs(args);
 
@@ -224,48 +151,4 @@ export async function init(args) {
     console.log(`  ${YELLOW}打开 OpenCode，对你的 CEO Agent 说：${RESET}`);
     console.log(`  ${BOLD}  帮我安装飞书 CLI：https://open.feishu.cn/document/no_class/mcp-archive/feishu-cli-installation-guide.md${RESET}`);
     console.log(`  ${GRAY}重启 OpenCode 后即可使用${RESET}\n`);
-}
-
-async function generateFiles(targetDir, modelMap) {
-  section('生成文件');
-  const agentFiles = await getTemplateFiles();
-  await mkdir(targetDir, { recursive: true });
-  for (const file of agentFiles) {
-    let content = await readFile(join(AGENTS_DIR, file), 'utf-8');
-    const roleName = file.replace('.md', '');
-    const model = modelMap[roleName] || modelMap['_default'];
-    content = content.replaceAll(MODEL_PLACEHOLDER, model);
-    await writeFile(join(targetDir, file), content);
-  }
-  done(`${agentFiles.length} 个 Agent 已生成`);
-  agentFiles.forEach(f => meta(`  ${ROLE_NAMES[f.replace('.md', '')] || f.replace('.md', '')}`));
-}
-
-async function fetchModels() {
-  try {
-    const output = execSync('opencode models 2>/dev/null', { encoding: 'utf-8', timeout: 10000 });
-    return output.trim().split('\n').filter(Boolean);
-  } catch {
-    return null;
-  }
-}
-
-async function pickModel(allModels, prompt) {
-  if (!allModels || allModels.length === 0) {
-    const m = await input({ message: prompt, theme: { prefix: '  ' } });
-    return m || DEFAULT_MODEL;
-  }
-
-  const answer = await search({
-    message: prompt,
-    source: (input) => {
-      if (!input) return allModels;
-      const q = input.toLowerCase();
-      return allModels.filter(m => m.toLowerCase().includes(q));
-    },
-    theme: { prefix: '  ' },
-  });
-
-  done(answer);
-  return answer;
 }
