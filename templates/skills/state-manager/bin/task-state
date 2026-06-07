@@ -1,0 +1,288 @@
+#!/bin/bash
+
+# task-state - 任务状态管理工具
+# 用于保存、恢复、列出任务状态
+
+set -e
+
+TASKS_DIR=".agent/tasks"
+
+# 确保目录存在
+ensure_dir() {
+  mkdir -p "$TASKS_DIR"
+}
+
+# 获取当前时间 (ISO 8601)
+now() {
+  date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
+# 用法说明
+usage() {
+  cat << EOF
+用法: task-state <command> [options]
+
+命令:
+  save <task-id> [options]    保存任务状态
+  load <task-id>              读取任务状态
+  list [options]              列出任务
+  clear <task-id>             清除任务状态
+
+save 选项:
+  --agent <name>              Agent 名称（必填）
+  --status <status>           任务状态：in_progress, completed, failed（必填）
+  --summary <msg>             任务摘要（必填）
+  --user-request <msg>        用户原始需求（必填）
+  --context <json>            上下文信息（可选）
+
+list 选项:
+  --all                       列出所有任务（包括已完成的）
+  --agent <name>              只列出指定 Agent 的任务
+
+示例:
+  task-state save fix-login-bug --agent fullstack-developer --status in_progress --summary "修复登录 bug" --user-request "用户说登录页面点击登录按钮没反应"
+  task-state load fix-login-bug
+  task-state list
+  task-state list --all
+  task-state clear fix-login-bug
+EOF
+  exit 1
+}
+
+# 保存任务状态
+save_state() {
+  local task_id="$1"
+  shift
+  
+  local agent=""
+  local status=""
+  local summary=""
+  local user_request=""
+  local context="{}"
+  
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --agent)
+        agent="$2"
+        shift 2
+        ;;
+      --status)
+        status="$2"
+        shift 2
+        ;;
+      --summary)
+        summary="$2"
+        shift 2
+        ;;
+      --user-request)
+        user_request="$2"
+        shift 2
+        ;;
+      --context)
+        context="$2"
+        shift 2
+        ;;
+      *)
+        echo "错误: 未知选项 $1" >&2
+        exit 1
+        ;;
+    esac
+  done
+  
+  # 验证必填字段
+  if [[ -z "$task_id" ]]; then
+    echo "错误: 缺少 task-id" >&2
+    exit 1
+  fi
+  if [[ -z "$agent" ]]; then
+    echo "错误: 缺少 --agent" >&2
+    exit 1
+  fi
+  if [[ -z "$status" ]]; then
+    echo "错误: 缺少 --status" >&2
+    exit 1
+  fi
+  if [[ -z "$summary" ]]; then
+    echo "错误: 缺少 --summary" >&2
+    exit 1
+  fi
+  if [[ -z "$user_request" ]]; then
+    echo "错误: 缺少 --user-request" >&2
+    exit 1
+  fi
+  
+  # 验证状态值
+  if [[ "$status" != "in_progress" && "$status" != "completed" && "$status" != "failed" ]]; then
+    echo "错误: 无效的状态值 '$status'，必须是 in_progress, completed, failed" >&2
+    exit 1
+  fi
+  
+  ensure_dir
+  
+  local file="$TASKS_DIR/$task_id.json"
+  local now=$(now)
+  
+  # 检查是否已存在，如果存在则保留 createdAt
+  local created_at="$now"
+  if [[ -f "$file" ]]; then
+    created_at=$(grep -o '"createdAt"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | sed 's/.*:[[:space:]]*"//' | sed 's/"$//' 2>/dev/null || echo "$now")
+  fi
+  
+  # 写入状态文件
+  cat > "$file" << EOF
+{
+  "taskId": "$task_id",
+  "agent": "$agent",
+  "status": "$status",
+  "summary": "$summary",
+  "userRequest": "$user_request",
+  "context": $context,
+  "createdAt": "$created_at",
+  "updatedAt": "$now"
+}
+}
+EOF
+  
+  echo "任务状态已保存: $task_id"
+}
+
+# 读取任务状态
+load_state() {
+  local task_id="$1"
+  
+  if [[ -z "$task_id" ]]; then
+    echo "错误: 缺少 task-id" >&2
+    exit 1
+  fi
+  
+  local file="$TASKS_DIR/$task_id.json"
+  
+  if [[ ! -f "$file" ]]; then
+    echo "错误: 任务不存在: $task_id" >&2
+    exit 1
+  fi
+  
+  cat "$file"
+}
+
+# 列出任务
+list_tasks() {
+  local show_all=false
+  local agent_filter=""
+  
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --all)
+        show_all=true
+        shift
+        ;;
+      --agent)
+        agent_filter="$2"
+        shift 2
+        ;;
+      *)
+        echo "错误: 未知选项 $1" >&2
+        exit 1
+        ;;
+    esac
+  done
+  
+  ensure_dir
+  
+  local has_tasks=false
+  
+  # 表头
+  printf "%-25s %-25s %-30s %-12s %-20s\n" "任务ID" "Agent" "摘要" "状态" "更新时间"
+  printf "%-25s %-25s %-30s %-12s %-20s\n" "-------------------------" "-------------------------" "------------------------------" "------------" "--------------------"
+  
+  for file in "$TASKS_DIR"/*.json; do
+    [[ -f "$file" ]] || continue
+    
+    local task_id=$(basename "$file" .json)
+    local agent=$(grep -o '"agent"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | sed 's/.*:[[:space:]]*"//' | sed 's/"$//')
+    local status=$(grep -o '"status"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | sed 's/.*:[[:space:]]*"//' | sed 's/"$//')
+    local summary=$(grep -o '"summary"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | sed 's/.*:[[:space:]]*"//' | sed 's/"$//')
+    local updated_at=$(grep -o '"updatedAt"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | sed 's/.*:[[:space:]]*"//' | sed 's/"$//')
+    
+    # 过滤条件
+    if [[ "$show_all" == false && "$status" != "in_progress" ]]; then
+      continue
+    fi
+    if [[ -n "$agent_filter" && "$agent" != "$agent_filter" ]]; then
+      continue
+    fi
+    
+    # 格式化时间显示
+    local display_time=$(echo "$updated_at" | sed 's/T/ /' | sed 's/Z//')
+    
+    printf "%-25s %-25s %-30s %-12s %-20s\n" "$task_id" "$agent" "$summary" "$status" "$display_time"
+    has_tasks=true
+  done
+  
+  if [[ "$has_tasks" == false ]]; then
+    if [[ "$show_all" == true ]]; then
+      echo "暂无任务"
+    else
+      echo "暂无未完成任务"
+    fi
+  fi
+}
+
+# 清除任务状态
+clear_state() {
+  local task_id="$1"
+  
+  if [[ -z "$task_id" ]]; then
+    echo "错误: 缺少 task-id" >&2
+    exit 1
+  fi
+  
+  local file="$TASKS_DIR/$task_id.json"
+  
+  if [[ ! -f "$file" ]]; then
+    echo "错误: 任务不存在: $task_id" >&2
+    exit 1
+  fi
+  
+  rm "$file"
+  echo "任务已清除: $task_id"
+}
+
+# 主入口
+if [[ $# -lt 1 ]]; then
+  usage
+fi
+
+command="$1"
+shift
+
+case "$command" in
+  save)
+    if [[ $# -lt 1 ]]; then
+      echo "错误: save 命令需要 task-id" >&2
+      exit 1
+    fi
+    save_state "$@"
+    ;;
+  load)
+    if [[ $# -lt 1 ]]; then
+      echo "错误: load 命令需要 task-id" >&2
+      exit 1
+    fi
+    load_state "$@"
+    ;;
+  list)
+    list_tasks "$@"
+    ;;
+  clear)
+    if [[ $# -lt 1 ]]; then
+      echo "错误: clear 命令需要 task-id" >&2
+      exit 1
+    fi
+    clear_state "$@"
+    ;;
+  *)
+    echo "错误: 未知命令 '$command'" >&2
+    usage
+    ;;
+esac

@@ -5,55 +5,61 @@
 ## 快速开始
 
 ```bash
-# 克隆项目
 git clone <repo-url>
 cd agent-squad
-
-# 安装依赖（本项目无运行时依赖，确保 node >= 18 即可）
 npm install
 
-# 初始化多 Agent 团队
-node src/cli.js init
+# 一键初始化
+node src/cli.js init --yes --no-lark
 ```
 
 ## 使用方式
 
 ```bash
-agent-squad init [选项]
+node src/cli.js init [选项]
 ```
 
 ### 选项
 
 | 参数 | 说明 |
 |------|------|
-| `--scope <project\|global>` | 安装到项目目录（`.opencode/agents/`）或全局（`~/.config/opencode/agents/`） |
-| `--model <id>` | 为所有 Agent 指定同一个模型（跳过交互选择） |
-| `--lark` | 启用飞书集成（安装 skills + 追加 prompt 补丁） |
-| `--no-lark` | 跳过飞书集成询问 |
-| `--yes` | 跳过所有确认提示 |
+| `--model <id>` | 直接指定模型（跳过交互选择） |
+| `--lark` | 启用飞书集成 |
+| `--no-lark` | 跳过飞书集成 |
+| `--yes` | 跳过所有交互，使用默认模型 |
 
 ### 示例
 
 ```bash
-# 交互模式
+# 交互式：选择模型 → 统一或独立设置 → 飞书集成
 node src/cli.js init
 
-# 安装到项目，指定模型，不使用飞书
-node src/cli.js init --scope project --model opencode/deepseek-v4-flash-free --yes --no-lark
+# 全自动
+node src/cli.js init --yes --no-lark
 
-# 安装到项目，启用飞书集成
-node src/cli.js init --scope project --model opencode/deepseek-v4-flash-free --yes --lark
-
-# 安装到全局配置
-node src/cli.js init --scope global
+# 指定模型 + 飞书
+node src/cli.js init --model opencode/deepseek-v4-flash-free --lark
 ```
 
-## 工作流程
+### 模型搜索
 
-1. **选择安装范围** — 当前项目（`.opencode/agents/`）或全局（`~/.config/opencode/agents/`）
-2. **选择模型** — 自动拉取 `opencode models` 列表，支持编号选择或手动输入。支持统一模型和每 Agent 独立模型两种模式
-3. **生成 8 个 Agent 文件** — CEO、PM、开发、设计、营销、客服、安全、顾问
-4. **可选飞书集成** — 安装 `lark-doc`、`lark-drive`、`lark-shared` 技能并追加 prompt 补丁
+交互式选择模型时，支持关键词搜索过滤：
+
+```
+  为所有 Agent 选择模型（输入关键词搜索，输入空值取消）：
+    1. opencode/big-pickle
+    2. opencode/deepseek-v4-flash-free
+    ...
+  搜索：deepseek
+
+  为所有 Agent 选择模型（输入关键词搜索，输入空值取消）：
+    1. opencode/deepseek-v4-flash-free
+    2. deepseek/deepseek-chat
+    ...
+  搜索（5 个匹配）：2
+```
+
+输入编号即可选中，输入关键词过滤列表，输入空值取第一个结果。
 
 ## Agent 角色
 
