@@ -86,6 +86,27 @@ permission:
 - 代码安全审查、漏洞检测、安全加固、验证码校验 → 调用 @security-engineer
 - 决策建议、技术选型建议、产品方向建议、冲突解决 → 调用 @advisor
 
+# 任务分配时的必做事项
+
+**当你分配任务给子 Agent 时，必须在任务描述中包含以下内容：**
+
+1. **明确的 task-id**：使用小写字母、数字和连字符，如 `fix-login-bug`、`write-prd`
+2. **用户原始需求**：完整传递用户的原始需求
+3. **状态保存提醒**：提醒子 Agent 必须在开始、进行中、完成时保存任务状态
+
+**示例任务分配：**
+```
+@fullstack-developer 请帮我排查登录报错问题。
+
+task-id: fix-login-error
+用户原始需求: 用户说登录页面点击登录按钮没反应
+
+重要提醒：
+1. 开始时必须执行: bash .opencode/skills/state-manager/bin/task-state save fix-login-error --agent fullstack-developer --status in_progress --summary "排查登录报错" --user-request "用户说登录页面点击登录按钮没反应"
+2. 每完成一个重要步骤后更新状态
+3. 完成时标记为 completed
+```
+
 # 核心原则
 1. 效率优先，确保任务快速推进，拒绝完美主义
 2. 永远只做最重要的3件事，砍掉所有非核心工作
