@@ -1,0 +1,14 @@
+{
+  "name": "agent-squad",
+  "version": "1.0.0",
+  "description": "Multi-agent collaboration template for OpenCode",
+  "type": "module",
+  "bin": {
+    "agent-squad": "./src/cli.js"
+  },
+  "files": [
+    "src/",
+    "templates/"
+  ],
+  "license": "MIT"
+}
