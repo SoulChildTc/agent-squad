@@ -1,8 +1,9 @@
-import { readFile, writeFile, mkdir, readdir, access } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, access, rm } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import stringWidth from 'string-width';
+import Mustache from 'mustache';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const TEMPLATES_DIR = join(__dirname, '..', 'templates');
@@ -15,6 +16,8 @@ export const DEFAULT_MODEL = 'opencode/deepseek-v4-flash-free';
 
 export const LARK_SKILLS = ['lark-doc', 'lark-drive', 'lark-shared'];
 export const LARK_SKILLS_SOURCE = 'larksuite/cli';
+
+export const STATE_MANAGER_SKILL = 'state-manager';
 
 export const ROLE_NAMES = {
   'ceo': 'ceo（总协调）',
@@ -101,6 +104,36 @@ export async function copyDir(src, dest) {
   }
 }
 
+export async function removeDir(dirPath) {
+  try {
+    await rm(dirPath, { recursive: true, force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function processTemplate(content, data) {
+  return Mustache.render(content, data);
+}
+
+export async function hasStateManager() {
+  try {
+    await access(join(process.cwd(), '.opencode', 'skills', STATE_MANAGER_SKILL));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getStateManagerSkillDir() {
+  return join(SKILLS_DIR, STATE_MANAGER_SKILL);
+}
+
+export function getStateManagerSkillTargetDir() {
+  return join(process.cwd(), '.opencode', 'skills', STATE_MANAGER_SKILL);
+}
+
 export async function fetchModels() {
   try {
     const output = execSync('opencode models 2>/dev/null', { encoding: 'utf-8', timeout: 10000 });
@@ -141,6 +174,7 @@ export function parseArgs(args) {
       case '--lark': opts.lark = true; break;
       case '--no-lark': opts.lark = false; break;
       case '--yes': opts.yes = true; break;
+      case '--state-manager': opts.stateManager = true; break;
     }
   }
   return opts;

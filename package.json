@@ -15,6 +15,7 @@
     "@inquirer/confirm": "^5.1.21",
     "@inquirer/input": "^4.3.1",
     "@inquirer/search": "^3.2.2",
+    "mustache": "^4.2.0",
     "string-width": "^8.2.1"
   }
 }

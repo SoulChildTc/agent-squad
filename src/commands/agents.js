@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import {
   AGENTS_DIR, LARK_DIR, MODEL_PLACEHOLDER, DEFAULT_MODEL, ROLE_NAMES,
   getTargetDir, getTemplateFiles, askConfirm, section, done, warn, error, meta,
-  banner, copyDir, fetchModels, pickModel, parseArgs, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
+  banner, copyDir, processTemplate, hasStateManager,
+  fetchModels, pickModel, parseArgs, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
 } from '../utils.js';
 
 async function getAgentModel(targetDir, roleName) {
@@ -46,16 +47,17 @@ async function appendLarkPatches(agentFiles, targetDir) {
   }
 }
 
-async function generateFiles(targetDir, modelMap, preserveLark) {
+async function generateFiles(targetDir, modelMap, preserveLark, stateManager) {
   section('生成 Agent 文件');
   const agentFiles = await getTemplateFiles();
   await mkdir(targetDir, { recursive: true });
   
   for (const file of agentFiles) {
-    let content = await readFile(join(AGENTS_DIR, file), 'utf-8');
+    const template = await readFile(join(AGENTS_DIR, file), 'utf-8');
     const roleName = file.replace('.md', '');
     const model = modelMap[roleName] || modelMap['_default'];
-    content = content.replaceAll(MODEL_PLACEHOLDER, model);
+    const data = { model, stateManager };
+    let content = processTemplate(template, data);
     await writeFile(join(targetDir, file), content);
   }
   
@@ -102,6 +104,12 @@ export async function agents(args) {
     }
   } catch {
     // doesn't exist
+  }
+
+  // 检测状态管理配置
+  const stateManager = await hasStateManager();
+  if (stateManager) {
+    meta('检测到 state-manager skill，启用状态管理');
   }
 
   section('模型');
@@ -170,7 +178,7 @@ export async function agents(args) {
   }
 
   // 生成文件
-  await generateFiles(targetDir, modelMap, preserveLark);
+  await generateFiles(targetDir, modelMap, preserveLark, stateManager);
 
   const agentFiles = await getTemplateFiles();
 
@@ -178,6 +186,9 @@ export async function agents(args) {
   done(`${agentFiles.length} 个 Agent 已更新到 ${targetDir}`);
   if (preserveLark) {
     meta('飞书配置已保留');
+  }
+  if (stateManager) {
+    meta('状态管理已启用');
   }
   console.log(`  ${GRAY}重启 OpenCode 后即可使用${RESET}\n`);
 }
