@@ -5,7 +5,7 @@ import {
   AGENTS_DIR, LARK_DIR, SKILLS_DIR, MODEL_PLACEHOLDER, DEFAULT_MODEL, ROLE_NAMES,
   LARK_SKILLS, LARK_SKILLS_SOURCE,
   getTargetDir, getTemplateFiles, askConfirm, section, done, warn, error, meta,
-  copyDir, fetchModels, pickModel, parseArgs, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
+  banner, copyDir, fetchModels, pickModel, parseArgs, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
 } from '../utils.js';
 
 async function generateFiles(targetDir, modelMap) {
@@ -90,9 +90,7 @@ async function copySkills(targetDir) {
 export async function init(args) {
   const opts = parseArgs(args);
 
-  console.log(`\n${CYAN}╔══════════════════════════════════════╗${RESET}`);
-  console.log(`${CYAN}║   ${BOLD}agent-squad  — 团队初始化工具${RESET}${CYAN}   ║${RESET}`);
-  console.log(`${CYAN}╚══════════════════════════════════════╝${RESET}`);
+  banner('agent-squad  — 团队初始化工具');
 
   section('安装范围');
   const targetDir = getTargetDir();

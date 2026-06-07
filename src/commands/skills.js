@@ -3,13 +3,11 @@ import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import {
   SKILLS_DIR, getSkillsTargetDir, copyDir, section, done, error, meta,
-  BOLD, CYAN, GREEN, RED, RESET
+  banner, BOLD, CYAN, GREEN, RED, RESET
 } from '../utils.js';
 
 export async function skills(args) {
-  console.log(`\n${CYAN}╔══════════════════════════════════════╗${RESET}`);
-  console.log(`${CYAN}║   ${BOLD}agent-squad  — 更新 Skills${RESET}${CYAN}      ║${RESET}`);
-  console.log(`${CYAN}╚══════════════════════════════════════╝${RESET}`);
+  banner('agent-squad  — 更新 Skills');
 
   section('Skills');
   const skillsTargetDir = getSkillsTargetDir();

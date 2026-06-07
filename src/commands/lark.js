@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import {
   AGENTS_DIR, LARK_DIR, LARK_SKILLS, LARK_SKILLS_SOURCE,
   getTargetDir, getTemplateFiles, section, done, warn, error, meta,
-  BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
+  banner, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
 } from '../utils.js';
 
 async function installLarkSkills() {
@@ -37,9 +37,7 @@ async function appendLarkPatches(agentFiles, targetDir) {
 }
 
 export async function lark(args) {
-  console.log(`\n${CYAN}╔══════════════════════════════════════╗${RESET}`);
-  console.log(`${CYAN}║   ${BOLD}agent-squad  — 更新飞书 Skills${RESET}${CYAN}   ║${RESET}`);
-  console.log(`${CYAN}╚══════════════════════════════════════╝${RESET}`);
+  banner('agent-squad  — 更新飞书 Skills');
 
   section('飞书 Skills');
   const targetDir = getTargetDir();

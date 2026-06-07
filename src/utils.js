@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, readdir, access } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import stringWidth from 'string-width';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const TEMPLATES_DIR = join(__dirname, '..', 'templates');
@@ -70,6 +71,17 @@ export function error(msg) {
 
 export function meta(msg) {
   console.log(`  ${GRAY}${msg}${RESET}`);
+}
+
+export function banner(text) {
+  const width = 40;
+  const lineWidth = width - 5; // 减去 "║   " (4字符) 和 "║" (1字符)
+  const textWidth = stringWidth(text);
+  const padding = lineWidth - textWidth;
+  
+  console.log(`\n${CYAN}╔${'═'.repeat(width - 2)}╗${RESET}`);
+  console.log(`${CYAN}║   ${BOLD}${text}${RESET}${CYAN}${' '.repeat(padding > 0 ? padding : 0)}║${RESET}`);
+  console.log(`${CYAN}╚${'═'.repeat(width - 2)}╝${RESET}`);
 }
 
 export async function copyDir(src, dest) {
