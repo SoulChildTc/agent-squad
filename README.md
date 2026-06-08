@@ -38,6 +38,8 @@ node src/cli.js init [选项]
 | `--model <id>` | 直接指定模型（跳过交互选择） |
 | `--lark` | 启用飞书集成 |
 | `--no-lark` | 跳过飞书集成 |
+| `--remote` | 从 GitHub 拉取最新模板（不加则用本地打包的模板） |
+| `--state-manager` | 启用状态管理 |
 | `--yes` | 跳过所有交互，使用默认模型 |
 
 ### 示例
@@ -51,6 +53,15 @@ npx @soulchildtc/agent-squad init --yes --no-lark
 
 # 指定模型 + 飞书
 npx @soulchildtc/agent-squad init --model opencode/deepseek-v4-flash-free --lark
+
+# 从 GitHub 拉取最新模板（适合 npm 包未发布但模板已更新的场景）
+npx @soulchildtc/agent-squad init --remote --yes --no-lark
+
+# 只更新 Agent，使用远程最新模板
+npx @soulchildtc/agent-squad update agents --remote
+
+# 只更新 Skills，使用远程最新模板
+npx @soulchildtc/agent-squad update skills --remote
 ```
 
 ### 模型搜索
@@ -94,13 +105,19 @@ agent-squad/
 ├── .gitignore
 ├── src/
 │   ├── cli.js            # CLI 入口
+│   ├── github.js         # GitHub 模板拉取模块
 │   └── commands/
-│       └── init.js       # init 命令实现
+│       ├── init.js       # init 命令
+│       ├── agents.js     # update agents 命令
+│       ├── skills.js     # update skills 命令
+│       └── lark.js       # update lark 命令
 ├── templates/
 │   ├── agents/           # Agent 角色 Markdown 模板
 │   │   ├── ceo.md
 │   │   ├── product-manager.md
 │   │   └── ...
+│   ├── skills/           # 内置 Skills 模板
+│   │   └── agent-manager/
 │   └── lark/             # 飞书集成 prompt 补丁
 │       ├── ceo.md
 │       └── ...
