@@ -7,8 +7,10 @@
 ### NPX（推荐）
 
 ```bash
-npx @soulchildtc/agent-squad init --yes --no-lark
+npx @soulchildtc/agent-squad@latest init --yes --no-lark
 ```
+
+> **注意**：npx 会缓存已下载的版本，如需获取最新版本请务必加 `@latest` 后缀。
 
 ### 本地运行
 
