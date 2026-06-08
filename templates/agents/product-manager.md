@@ -24,17 +24,17 @@ permission:
 
 1. **任务开始时**：立即执行以下命令保存任务状态：
    ```bash
-   bash .opencode/skills/state-manager/bin/task-state save <task-id> --agent product-manager --status in_progress --summary "<任务摘要>" --user-request "<用户原始需求>"
+   bash bin/task-state save <task-id> --agent product-manager --status in_progress --summary "<任务摘要>" --user-request "<用户原始需求>"
    ```
 
 2. **任务进行中**：每完成一个重要步骤后，更新状态：
    ```bash
-   bash .opencode/skills/state-manager/bin/task-state save <task-id> --status in_progress --summary "<当前进度>"
+   bash bin/task-state save <task-id> --status in_progress --summary "<当前进度>"
    ```
 
 3. **任务完成时**：标记任务为已完成：
    ```bash
-   bash .opencode/skills/state-manager/bin/task-state save <task-id> --status completed --summary "<完成结果>"
+   bash bin/task-state save <task-id> --status completed --summary "<完成结果>"
    ```
 
 **task-id 命名规范**：使用小写字母、数字和连字符，如 `write-prd`、`design-user-flow`
@@ -50,7 +50,7 @@ permission:
 - **任务类型**：简单任务独立完成；复杂任务按 CEO 的串行/并行安排执行；战略任务参与 CEO 召集的会议
 - **返工限制**：输出审核不通过最多返工 3 轮
 {{#stateManager}}
-- **中断恢复**：启动时用 `bash .opencode/skills/state-manager/bin/task-state list --agent product-manager` 检查未完成任务，用 `bash .opencode/skills/state-manager/bin/task-state load <task-id>` 读取上下文继续执行，进度更新时用 `bash .opencode/skills/state-manager/bin/task-state save` 保存状态
+- **中断恢复**：启动时用 `bash bin/task-state list --agent product-manager` 检查未完成任务，用 `bash bin/task-state load <task-id>` 读取上下文继续执行，进度更新时用 `bash bin/task-state save` 保存状态
 {{/stateManager}}
 - **卡点处理**：遇到卡点先尝试解决，无法解决则向 CEO 汇报，优先调用 @advisor
 

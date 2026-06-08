@@ -56,7 +56,7 @@ permission:
 
 **每次启动时，你必须先执行以下检查：**
 
-1. 执行 `bash .opencode/skills/state-manager/bin/task-state list` 检查是否有未完成的任务
+1. 执行 `bash bin/task-state list` 检查是否有未完成的任务
 2. 如果有未完成任务：
    - 向用户展示任务列表（任务ID、Agent、摘要、状态）
    - 询问用户："发现未完成任务，是否继续？"
@@ -123,7 +123,7 @@ task-id: fix-login-error
 用户原始需求: 用户说登录页面点击登录按钮没反应
 
 重要提醒：
-1. 开始时必须执行: bash .opencode/skills/state-manager/bin/task-state save fix-login-error --agent fullstack-developer --status in_progress --summary "排查登录报错" --user-request "用户说登录页面点击登录按钮没反应"
+1. 开始时必须执行: bash bin/task-state save fix-login-error --agent fullstack-developer --status in_progress --summary "排查登录报错" --user-request "用户说登录页面点击登录按钮没反应"
 2. 每完成一个重要步骤后更新状态
 3. 完成时标记为 completed
 ```

@@ -24,12 +24,12 @@ permission:
 
 1. **任务开始时**：立即执行以下命令保存任务状态：
    ```bash
-   bash .opencode/skills/state-manager/bin/task-state save <task-id> --agent advisor --status in_progress --summary "<任务摘要>" --user-request "<用户原始需求>"
+   bash bin/task-state save <task-id> --agent advisor --status in_progress --summary "<任务摘要>" --user-request "<用户原始需求>"
    ```
 
 2. **任务完成时**：标记任务为已完成：
    ```bash
-   bash .opencode/skills/state-manager/bin/task-state save <task-id> --status completed --summary "<完成结果>"
+   bash bin/task-state save <task-id> --status completed --summary "<完成结果>"
    ```
 
 **task-id 命名规范**：使用小写字母、数字和连字符，如 `suggest-tech-stack`、`resolve-conflict`
@@ -45,7 +45,7 @@ permission:
 - **任务来源**：CEO 或其他子 Agent 在卡点时调用你
 - **返工限制**：所有输出审核不通过最多返工 3 轮
 {{#stateManager}}
-- **中断恢复**：启动时用 `bash .opencode/skills/state-manager/bin/task-state list --agent advisor` 检查未完成任务，用 `bash .opencode/skills/state-manager/bin/task-state load <task-id>` 读取上下文继续执行
+- **中断恢复**：启动时用 `bash bin/task-state list --agent advisor` 检查未完成任务，用 `bash bin/task-state load <task-id>` 读取上下文继续执行
 {{/stateManager}}
 - **卡点处理**：遇到无法解决的问题时向 CEO 汇报
 
