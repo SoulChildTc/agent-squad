@@ -1,12 +1,14 @@
-import { readdir } from 'node:fs/promises';
+import { readdir, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import {
   SKILLS_DIR, STATE_MANAGER_SKILL, getSkillsTargetDir, copyDir, section, done, error, meta,
-  banner, hasStateManager, BOLD, CYAN, GREEN, RED, RESET
+  banner, hasStateManager, parseArgs, resolveTemplates, BOLD, CYAN, GREEN, RED, RESET
 } from '../utils.js';
 
 export async function skills(args) {
+  const opts = parseArgs(args);
+
   banner('agent-squad  — 更新 Skills');
 
   section('Skills');
@@ -16,29 +18,57 @@ export async function skills(args) {
   // 检查 state-manager 是否已启用
   const stateManagerEnabled = await hasStateManager();
 
+  // 拉取远程模板（如果指定了 --remote）
+  const remoteSkills = await resolveTemplates('skills', opts);
+
   let copiedCount = 0;
-  const skills = await readdir(SKILLS_DIR);
-  
-  for (const skill of skills) {
-    // 如果 state-manager 未启用，跳过
-    if (skill === STATE_MANAGER_SKILL && !stateManagerEnabled) {
-      continue;
+
+  if (remoteSkills) {
+    // 远程模式：从 GitHub 下载的 Map 写入文件
+    for (const [skillName, files] of remoteSkills) {
+      if (skillName === STATE_MANAGER_SKILL && !stateManagerEnabled) {
+        continue;
+      }
+
+      const skillTargetDir = join(skillsTargetDir, skillName);
+      await mkdir(skillTargetDir, { recursive: true });
+
+      for (const [relativePath, content] of files) {
+        const filePath = join(skillTargetDir, relativePath);
+        await mkdir(join(filePath, '..'), { recursive: true });
+        await writeFile(filePath, content);
+      }
+      copiedCount++;
+      meta(`  ${skillName}`);
     }
-    
-    const skillSrcDir = join(SKILLS_DIR, skill);
-    const skillTargetDir = join(skillsTargetDir, skill);
-    
-    await copyDir(skillSrcDir, skillTargetDir);
-    copiedCount++;
-    meta(`  ${skill}`);
+  } else {
+    // 本地模式：从本地 templates/skills 复制
+    const skills = await readdir(SKILLS_DIR);
+
+    for (const skill of skills) {
+      if (skill === STATE_MANAGER_SKILL && !stateManagerEnabled) {
+        continue;
+      }
+
+      const skillSrcDir = join(SKILLS_DIR, skill);
+      const skillTargetDir = join(skillsTargetDir, skill);
+
+      await copyDir(skillSrcDir, skillTargetDir);
+      copiedCount++;
+      meta(`  ${skill}`);
+    }
   }
-  
+
   // 确保 bin 目录下的脚本有执行权限
-  for (const skill of skills) {
+  const skillsForPerms = remoteSkills
+    ? [...remoteSkills.keys()]
+    : await readdir(SKILLS_DIR);
+
+  for (const skill of skillsForPerms) {
     if (skill === STATE_MANAGER_SKILL && !stateManagerEnabled) {
       continue;
     }
-    
+
     const binDir = join(skillsTargetDir, skill, 'bin');
     try {
       const binFiles = await readdir(binDir);
@@ -50,7 +80,7 @@ export async function skills(args) {
       // no bin directory
     }
   }
-  
+
   if (copiedCount > 0) {
     done(`${copiedCount} 个 Skill 已更新到 ${skillsTargetDir}`);
   }

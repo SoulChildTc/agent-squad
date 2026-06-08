@@ -175,7 +175,28 @@ export function parseArgs(args) {
       case '--no-lark': opts.lark = false; break;
       case '--yes': opts.yes = true; break;
       case '--state-manager': opts.stateManager = true; break;
+      case '--remote': opts.remote = true; break;
     }
   }
   return opts;
+}
+
+/**
+ * 解析模板来源（远程 or 本地）
+ * @param {'agents'|'lark'|'skills'} type - 模板类型
+ * @param {object} opts - parseArgs 返回的选项
+ * @returns {Map|null} 远程模板 Map，null 表示使用本地
+ */
+export async function resolveTemplates(type, opts) {
+  if (!opts.remote) return null;
+
+  const { fetchTemplates } = await import('./github.js');
+  meta(`从 GitHub 拉取 ${type} 模板...`);
+  const result = await fetchTemplates(type);
+  if (result) {
+    done(`${type} 远程模板拉取成功`);
+  } else {
+    warn(`${type} 远程模板拉取失败，回退到本地模板`);
+  }
+  return result;
 }

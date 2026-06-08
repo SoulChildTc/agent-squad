@@ -25,15 +25,20 @@ Options:
   --lark               启用飞书集成（init 命令可用）
   --no-lark            禁用飞书集成（init 命令可用）
   --state-manager      启用状态管理（init 命令可用）
+  --remote             从 GitHub 拉取最新模板（init/update agents/update skills/update lark 可用）
   --yes                跳过确认提示
 
 Examples:
   agent-squad init
   agent-squad init --model opencode/deepseek-v4-flash-free --lark
   agent-squad init --state-manager
+  agent-squad init --remote
   agent-squad update agents
+  agent-squad update agents --remote
   agent-squad update skills
+  agent-squad update skills --remote
   agent-squad update lark
+  agent-squad update lark --remote
   agent-squad update model                              # 显示当前模型配置
   agent-squad update model ceo                          # 交互式选择 ceo 的模型
   agent-squad update model ceo opencode/deepseek-v4-flash-free  # 直接指定 ceo 的模型

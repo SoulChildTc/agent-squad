@@ -4,7 +4,8 @@ import {
   AGENTS_DIR, LARK_DIR, MODEL_PLACEHOLDER, DEFAULT_MODEL, ROLE_NAMES,
   getTargetDir, getTemplateFiles, askConfirm, section, done, warn, error, meta,
   banner, copyDir, processTemplate, hasStateManager,
-  fetchModels, pickModel, parseArgs, BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
+  fetchModels, pickModel, parseArgs, resolveTemplates,
+  BOLD, CYAN, GREEN, YELLOW, RED, GRAY, RESET
 } from '../utils.js';
 
 async function getAgentModel(targetDir, roleName) {
@@ -28,35 +29,47 @@ async function hasLarkPatch(targetDir, roleName) {
   }
 }
 
-async function appendLarkPatches(agentFiles, targetDir) {
+async function appendLarkPatches(agentFiles, targetDir, remoteLark) {
   let patchedCount = 0;
   for (const file of agentFiles) {
-    const patchFile = join(LARK_DIR, file);
-    try {
-      await access(patchFile);
-      const patch = await readFile(patchFile, 'utf-8');
-      const content = await readFile(join(targetDir, file), 'utf-8');
-      await writeFile(join(targetDir, file), content + '\n' + patch);
-      patchedCount++;
-    } catch {
-      // no patch for this role
+    let patch;
+    if (remoteLark && remoteLark.has(file)) {
+      patch = remoteLark.get(file);
+    } else {
+      const patchFile = join(LARK_DIR, file);
+      try {
+        patch = await readFile(patchFile, 'utf-8');
+      } catch {
+        continue;
+      }
     }
+    
+    const content = await readFile(join(targetDir, file), 'utf-8');
+    await writeFile(join(targetDir, file), content + '\n' + patch);
+    patchedCount++;
   }
   if (patchedCount > 0) {
     done(`飞书补丁已追加到 ${patchedCount} 个 Agent`);
   }
 }
 
-async function generateFiles(targetDir, modelMap, preserveLark, stateManager) {
+async function generateFiles(targetDir, modelMap, preserveLark, stateManager, remoteAgents, remoteLark) {
   section('生成 Agent 文件');
   const agentFiles = await getTemplateFiles();
   await mkdir(targetDir, { recursive: true });
   
   for (const file of agentFiles) {
-    const template = await readFile(join(AGENTS_DIR, file), 'utf-8');
     const roleName = file.replace('.md', '');
     const model = modelMap[roleName] || modelMap['_default'];
     const data = { model, stateManager };
+    
+    let template;
+    if (remoteAgents && remoteAgents.has(file)) {
+      template = remoteAgents.get(file);
+    } else {
+      template = await readFile(join(AGENTS_DIR, file), 'utf-8');
+    }
+    
     let content = processTemplate(template, data);
     await writeFile(join(targetDir, file), content);
   }
@@ -66,7 +79,7 @@ async function generateFiles(targetDir, modelMap, preserveLark, stateManager) {
   
   // 如果需要保留飞书配置，追加飞书补丁
   if (preserveLark) {
-    await appendLarkPatches(agentFiles, targetDir);
+    await appendLarkPatches(agentFiles, targetDir, remoteLark);
   }
 }
 
@@ -177,8 +190,12 @@ export async function agents(args) {
     }
   }
 
+  // 拉取远程模板（如果指定了 --remote）
+  const remoteAgents = await resolveTemplates('agents', opts);
+  const remoteLark = preserveLark ? await resolveTemplates('lark', opts) : null;
+
   // 生成文件
-  await generateFiles(targetDir, modelMap, preserveLark, stateManager);
+  await generateFiles(targetDir, modelMap, preserveLark, stateManager, remoteAgents, remoteLark);
 
   const agentFiles = await getTemplateFiles();
 
