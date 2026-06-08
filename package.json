@@ -1,5 +1,5 @@
 {
-  "name": "agent-squad",
+  "name": "@soulchildtc/agent-squad",
   "version": "1.0.0",
   "description": "Multi-agent collaboration template for OpenCode",
   "type": "module",
