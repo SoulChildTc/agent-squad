@@ -4,6 +4,14 @@
 
 ## 快速开始
 
+### NPX（推荐）
+
+```bash
+npx @soulchildtc/agent-squad init --yes --no-lark
+```
+
+### 本地运行
+
 ```bash
 git clone <repo-url>
 cd agent-squad
@@ -16,6 +24,10 @@ node src/cli.js init --yes --no-lark
 ## 使用方式
 
 ```bash
+# NPX
+npx @soulchildtc/agent-squad init [选项]
+
+# 本地
 node src/cli.js init [选项]
 ```
 
@@ -32,13 +44,13 @@ node src/cli.js init [选项]
 
 ```bash
 # 交互式：选择模型 → 统一或独立设置 → 飞书集成
-node src/cli.js init
+npx @soulchildtc/agent-squad init
 
 # 全自动
-node src/cli.js init --yes --no-lark
+npx @soulchildtc/agent-squad init --yes --no-lark
 
 # 指定模型 + 飞书
-node src/cli.js init --model opencode/deepseek-v4-flash-free --lark
+npx @soulchildtc/agent-squad init --model opencode/deepseek-v4-flash-free --lark
 ```
 
 ### 模型搜索
@@ -106,3 +118,5 @@ node src/cli.js init
 ```
 
 不发布 npm 时，通过 `node src/cli.js` 直接运行即可。
+
+已发布 npm，可通过 `npx @soulchildtc/agent-squad` 直接运行。
