@@ -5,7 +5,7 @@
       "source": "larksuite/cli",
       "sourceType": "github",
       "skillPath": "skills/lark-doc/SKILL.md",
-      "computedHash": "3a49c016f05c820bc8804a6c7a0cbf0a9aaac42e10c63b77c8dcdc48bd78e424"
+      "computedHash": "4dd2a85847ffe3897cdb60f7a4a51887d2d5b2ae87f4c1d84afa5f3b49dc699f"
     },
     "lark-drive": {
       "source": "larksuite/cli",
@@ -17,7 +17,7 @@
       "source": "larksuite/cli",
       "sourceType": "github",
       "skillPath": "skills/lark-shared/SKILL.md",
-      "computedHash": "c912e2f964fb39e20e7f52966c3a47976d6c1f68c1ca3263e5335653904036e9"
+      "computedHash": "963542d33fdcd6f2a8021436a7bb095d0989aebc198e4b4abf6ea0369aa102c0"
     }
   }
 }

@@ -7,7 +7,7 @@ tools:
   read: true
   write: true
   edit: true
-  bash: false
+  bash: true
   webfetch: true
 permission:
   task:
